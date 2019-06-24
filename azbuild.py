@@ -111,6 +111,26 @@ def git_submodule_update():
         '--recursive',
     ])
 
+# cmake "-GAndroid Gradle - Ninja" -DANDROID_ABI=arm64-v8a -DANDROID_NDK="D:\Programs\Android\SDK\ndk-bundle"
+# -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE="D:\Programs\Android\SDK\ndk-bundle\build\cmake\android.toolchain.cmake"
+# -DANDROID_NATIVE_API_LEVEL=21 -DANDROID_TOOLCHAIN=clang
+
+
+def build(target, args):
+    if target == "android":
+
+        if config.has_option("Android", "sdk_location"):
+            raise Exception("No Android SDK location provided")
+
+        sdk_loc = config.get("Android", "sdk_location")
+        arch = args.arch if args.arch else "arm64-v8a"
+        abi_level = args.api_level if args.api_level else "21"
+
+        flags = """
+        -DANDROID_ABI={0} -DANDROID_NDK=\"{1}/nkd-bundle\"
+        -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE=\"{1}/nkd-bundle/build/cmake/android.toolchain.cmake\" 
+        -DANDROID_NATIVE_API_LEVEL={2} -DANDROID_TOOLCHAIN=clang""".format(arch, sdk_loc, abi_level)
+
 
 class Command(object):
     """Base type for commands.
