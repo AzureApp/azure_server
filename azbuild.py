@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import json
+from os import path
 
 __author__ = "Satori (Razzile) <https://github.com/Razzile>"
 
@@ -26,6 +27,7 @@ def discover_commands(subparsers):
     """
     commands = {
         'setup': SetupCommand(subparsers),
+        'build': BuildCommand(subparsers)
     }
     # if sys.platform == 'win32':
     #    commands['devenv'] = DevenvCommand(subparsers)
@@ -76,26 +78,32 @@ def main():
     sys.exit(return_code)
 
 
-def shell_call(command, throw_on_error=True, stdout_path=None):
+def shell_call(command, throw_on_error=True, stdout_path=None, cwd=None):
     """Executes a shell command.
     Args:
       command: Command to execute, as a list of parameters.
       throw_on_error: Whether to throw an error or return the status code.
       stdout_path: File path to write stdout output to.
+      cwd: Path to execute the command from
     Returns:
       If throw_on_error is False the status code of the call will be returned.
     """
     stdout_file = None
     if stdout_path:
         stdout_file = open(stdout_path, 'w')
+
+    if cwd is None:
+        cwd = os.getcwd()
     result = 0
     try:
         if throw_on_error:
             result = 1
-            subprocess.check_call(command, shell=False, stdout=stdout_file)
+            subprocess.check_call(command, shell=False,
+                                  stdout=stdout_file, cwd=cwd)
             result = 0
         else:
-            result = subprocess.call(command, shell=False, stdout=stdout_file)
+            result = subprocess.call(
+                command, shell=False, stdout=stdout_file, cwd=cwd)
     finally:
         if stdout_file:
             stdout_file.close()
@@ -117,19 +125,43 @@ def git_submodule_update():
 
 
 def build(target, args):
-    if target == "android":
+    flags = ""
+    if not config.has_option("proto", "protobuf_exe") or not config.has_option("proto", "grpc_cpp_plugin_exe"):
+        raise Exception("No protobuf or grpc plugin executable provided")
 
-        if config.has_option("Android", "sdk_location"):
+    build_type = args['build_type'] if args is not None else "Debug"
+
+    flags += "-DCMAKE_BUILD_TYPE={0} -DPROTOC_EXECUTABLE={1} -DGRPC_CPP_PLUGIN={2} ".format(build_type, config.get("proto", "protobuf_exe").strip('"'),
+                                                                                            config.get("proto", "grpc_cpp_plugin_exe").strip('"'))
+
+    if config.has_option("proto", "use_proto_lite") and config.getboolean("proto", "use_proto_lite"):
+        flags += "-DgRPC_USE_PROTO_LITE=on "
+
+    # android-specific build options
+    if target == "android":
+        if not config.has_option("android", "sdk_location"):
             raise Exception("No Android SDK location provided")
 
-        sdk_loc = config.get("Android", "sdk_location")
-        arch = args.arch if args.arch else "arm64-v8a"
-        abi_level = args.api_level if args.api_level else "21"
+        sdk_loc = config.get("android", "sdk_location").strip('"')
+        ndk_bundle = path.join(sdk_loc, "ndk-bundle")
+        toolchain_file = path.join(
+            ndk_bundle, "build/cmake/android.toolchain.cmake")
+        arch = args['arch'] if args is not None and 'arch' in args else "arm64-v8a"
+        abi_level = args['abi_level'] if args is not None and 'abi_level' in args else "21"
 
-        flags = """
-        -DANDROID_ABI={0} -DANDROID_NDK=\"{1}/nkd-bundle\"
-        -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE=\"{1}/nkd-bundle/build/cmake/android.toolchain.cmake\" 
-        -DANDROID_NATIVE_API_LEVEL={2} -DANDROID_TOOLCHAIN=clang""".format(arch, sdk_loc, abi_level)
+        flags += "-DAZURE_TARGET=android -DANDROID_ABI={0} -DANDROID_NDK={1} -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE={2} -DANDROID_NATIVE_API_LEVEL={3} -DANDROID_TOOLCHAIN=clang".format(
+            arch, ndk_bundle, toolchain_file, abi_level)
+    if target == "windows":
+        flags += "-DAZURE_TARGET=windows "
+
+    build_path = path.join(os.getcwd(), "build")
+    if not path.exists(build_path):
+        os.makedirs(build_path)
+
+    print("cmake .. {0}".format(flags))
+
+    gen_cmd = ["cmake"] + flags.split(" ") + [path.join(build_path, "..")]
+    gen_proc = shell_call(gen_cmd, cwd=build_path)
 
 
 class Command(object):
@@ -183,6 +215,42 @@ class SetupCommand(Command):
         # Setup submodules.
         print('- git submodule init / update...')
         git_submodule_update()
+        print('')
+
+        return 0
+
+
+class BuildCommand(Command):
+    """'build' command"""
+
+    def __init__(self, subparsers, *args, **kwargs):
+        super(BuildCommand, self).__init__(
+            subparsers,
+            name='build',
+            help_short='Build azure',
+            *args, **kwargs)
+        self.parser.add_argument(
+            '--config', choices=['debug', 'release'], default='debug',
+            type=str.lower, help='Chooses the build configuration.')
+        self.parser.add_argument(
+            '--target', default='windows',
+            help='Builds only the given target(s).')
+        self.parser.add_argument(
+            '--arch', help='Choose a specific arch to build for')
+        self.parser.add_argument(
+            '--abi_level', help='Choose a specific android ABI level to build for', default='21')
+
+    def execute(self, args, pass_args, cwd):
+        print('Building azure...')
+        print('')
+
+        # Setup submodules.
+        print('- generating cmake project')
+        build(args['target'], {
+            'build_type': args['config'],
+            'arch': args['arch'],
+            'abi_level': args['abi_level']
+        })
         print('')
 
         return 0

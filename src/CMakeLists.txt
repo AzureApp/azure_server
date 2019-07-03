@@ -24,7 +24,7 @@ set(GRPC_CPP_PLUGIN "/usr/bin/grpc_cpp_plugin" CACHE STRING "Path to grpc_cpp_pl
 endif()
 
 if(WIN32)
-add_definitions(-D_WIN32_WINNT=0x0601 -DGRPC_USE_PROTO_LITE)
+add_definitions(-D_WIN32_WINNT=0x0601)
 endif()
 
 if(NOT EXISTS ${PROTOC_EXECUTABLE})
@@ -37,6 +37,10 @@ endif()
 
 # Use lite runtime
 set(gRPC_USE_PROTO_LITE ON CACHE BOOL "Use lite protobuf")
+
+if(gRPC_USE_PROTO_LITE)
+add_definitions(-DGRPC_USE_PROTO_LITE)
+endif()
 
 set(GRPC_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/grpc" CACHE BOOL "Directory of grpc source code")
 
