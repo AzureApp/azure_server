@@ -124,21 +124,23 @@ def git_submodule_update():
 # -DANDROID_NATIVE_API_LEVEL=21 -DANDROID_TOOLCHAIN=clang
 
 
-def build(target, args):
+def generate_cmake(platform, args):
     flags = ""
     if not config.has_option("proto", "protobuf_exe") or not config.has_option("proto", "grpc_cpp_plugin_exe"):
         raise Exception("No protobuf or grpc plugin executable provided")
 
-    build_type = args['build_type'] if args is not None else "Debug"
+    build_type = args['config'] if args is not None else "Debug"
 
     flags += "-DCMAKE_BUILD_TYPE={0} -DPROTOC_EXECUTABLE={1} -DGRPC_CPP_PLUGIN={2} ".format(build_type, config.get("proto", "protobuf_exe").strip('"'),
                                                                                             config.get("proto", "grpc_cpp_plugin_exe").strip('"'))
 
+    # We don't need to build codegen binaries as we ask the user to provide them
+    flags += "-Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_PROTOC_BINARIES=OFF -DgRPC_BUILD_TESTS=OFF -DgRPC_BUILD_CODEGEN=OFF "
     if config.has_option("proto", "use_proto_lite") and config.getboolean("proto", "use_proto_lite"):
         flags += "-DgRPC_USE_PROTO_LITE=on "
 
     # android-specific build options
-    if target == "android":
+    if platform == "android":
         if not config.has_option("android", "sdk_location"):
             raise Exception("No Android SDK location provided")
 
@@ -149,10 +151,10 @@ def build(target, args):
         arch = args['arch'] if args is not None and 'arch' in args else "arm64-v8a"
         abi_level = args['abi_level'] if args is not None and 'abi_level' in args else "21"
 
-        flags += "-DAZURE_TARGET=android -DANDROID_ABI={0} -DANDROID_NDK={1} -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE={2} -DANDROID_NATIVE_API_LEVEL={3} -DANDROID_TOOLCHAIN=clang".format(
+        flags += "-DAZURE_PLATFORM=android -DANDROID_ABI={0} -DANDROID_NDK={1} -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE={2} -DANDROID_NATIVE_API_LEVEL={3} -DANDROID_TOOLCHAIN=clang".format(
             arch, ndk_bundle, toolchain_file, abi_level)
-    if target == "windows":
-        flags += "-DAZURE_TARGET=windows "
+    if platform == "windows":
+        flags += "-DAZURE_PLATFORM=windows "
 
     build_path = path.join(os.getcwd(), "build")
     if not path.exists(build_path):
@@ -161,7 +163,30 @@ def build(target, args):
     print("cmake .. {0}".format(flags))
 
     gen_cmd = ["cmake"] + flags.split(" ") + [path.join(build_path, "..")]
-    gen_proc = shell_call(gen_cmd, cwd=build_path)
+    shell_call(gen_cmd, cwd=build_path)
+
+
+def build(platform, args, throw_on_error=True):
+    build_path = path.join(os.getcwd(), "build")
+    if not path.exists(build_path):
+        if throw_on_error:
+            raise Exception("Build directory has not been generated")
+        else:
+            return False
+
+    build_cmd = ["cmake", "--build", "."]
+
+    parallel = args is not None and 'j' in args
+    if parallel:
+        threads = args['j']
+        # TODO: check for cmake support (requires version >= 3.12)
+        build_cmd += ['-j', str(threads)]
+
+    targets = args['target']
+    if targets:
+        build_cmd += ['--target'] + targets
+
+    shell_call(build_cmd, cwd=build_path)
 
 
 class Command(object):
@@ -233,12 +258,16 @@ class BuildCommand(Command):
             '--config', choices=['debug', 'release'], default='debug',
             type=str.lower, help='Chooses the build configuration.')
         self.parser.add_argument(
-            '--target', default='windows',
-            help='Builds only the given target(s).')
+            '--platform', default='windows',
+            help='Builds only the given platform(s).')
+        self.parser.add_argument(
+            '--target', action='append', default=[], help='Builds the specific target(s)')
         self.parser.add_argument(
             '--arch', help='Choose a specific arch to build for')
         self.parser.add_argument(
             '--abi_level', help='Choose a specific android ABI level to build for', default='21')
+        self.parser.add_argument(
+            '-j', default=4, type=int, help='Number of parallel threads')
 
     def execute(self, args, pass_args, cwd):
         print('Building azure...')
@@ -246,11 +275,9 @@ class BuildCommand(Command):
 
         # Setup submodules.
         print('- generating cmake project')
-        build(args['target'], {
-            'build_type': args['config'],
-            'arch': args['arch'],
-            'abi_level': args['abi_level']
-        })
+        generate_cmake(args['platform'], args)
+        print('- building cmake project')
+        build(args['platform'], args)
         print('')
 
         return 0
