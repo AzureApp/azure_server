@@ -9,6 +9,7 @@ import configparser
 import os
 import subprocess
 import sys
+import shutil
 import json
 from os import path
 
@@ -27,7 +28,8 @@ def discover_commands(subparsers):
     """
     commands = {
         'setup': SetupCommand(subparsers),
-        'build': BuildCommand(subparsers)
+        'build': BuildCommand(subparsers),
+        'clean': CleanCommand(subparsers)
     }
     # if sys.platform == 'win32':
     #    commands['devenv'] = DevenvCommand(subparsers)
@@ -192,6 +194,12 @@ def build(platform, args, throw_on_error=True):
     shell_call(build_cmd, cwd=build_path)
 
 
+def clean():
+    build_path = path.join(os.getcwd(), 'build')
+    if path.exists(build_path):
+        shutil.rmtree(build_path)
+
+
 class Command(object):
     """Base type for commands.
     """
@@ -283,6 +291,26 @@ class BuildCommand(Command):
         generate_cmake(args['platform'], args)
         print('- building cmake project')
         build(args['platform'], args)
+        print('')
+
+        return 0
+
+
+class CleanCommand(Command):
+    """'clean' command."""
+
+    def __init__(self, subparsers, *args, **kwargs):
+        super(CleanCommand, self).__init__(
+            subparsers,
+            name='clean',
+            help_short='Clean the build environment.',
+            *args, **kwargs)
+
+    def execute(self, args, pass_args, cwd):
+        print('Cleaning the build environment...')
+        print('')
+
+        clean()
         print('')
 
         return 0
