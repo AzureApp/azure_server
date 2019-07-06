@@ -131,6 +131,9 @@ def generate_cmake(platform, args):
 
     build_type = args['config'] if args is not None else "Debug"
 
+    if args['generator'] == 'ninja':
+        flags += "-GNinja "
+
     flags += "-DCMAKE_BUILD_TYPE={0} -DPROTOC_EXECUTABLE={1} -DGRPC_CPP_PLUGIN={2} ".format(build_type, config.get("proto", "protobuf_exe").strip('"'),
                                                                                             config.get("proto", "grpc_cpp_plugin_exe").strip('"'))
 
@@ -254,6 +257,8 @@ class BuildCommand(Command):
             name='build',
             help_short='Build azure',
             *args, **kwargs)
+        self.parser.add_argument('--generator', choices=[
+                                 'default', 'ninja'], default='default', help='Select the default build generator')
         self.parser.add_argument(
             '--config', choices=['debug', 'release'], default='debug',
             type=str.lower, help='Chooses the build configuration.')
