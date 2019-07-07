@@ -73,8 +73,6 @@ function(protobuf_grpc_generate_cpp SRC_FILES HDR_FILES INCLUDE_ROOT)
     get_filename_component(REL_DIR ${REL_FIL} DIRECTORY)
     set(RELFIL_WE "${REL_DIR}/${FIL_WE}")
 
-    message(WARNING "ARGN: ${ARGN}\n FIL: ${FIL}\n ABS_FIL: ${ABS_FIL}\n REL_FIL: ${REL_FIL}\n PROTOBUF_INCLUDE_PATH: ${PROTOBUF_INCLUDE_PATH}")
-
     list(APPEND ${SRC_FILES} "${GRPC_PROTO_GENS_DIR}/${RELFIL_WE}.pb.cc")
     list(APPEND ${HDR_FILES} "${GRPC_PROTO_GENS_DIR}/${RELFIL_WE}.pb.h")
     list(APPEND ${SRC_FILES} "${GRPC_PROTO_GENS_DIR}/${RELFIL_WE}.grpc.pb.cc")
@@ -100,10 +98,7 @@ function(protobuf_grpc_generate_cpp SRC_FILES HDR_FILES INCLUDE_ROOT)
   set(${HDR_FILES} ${${HDR_FILES}} PARENT_SCOPE)
 endfunction()
 
-message(WARNING "PROTO_SRC_DIR ${PROTO_SRC_DIR}")
-
 file(GLOB_RECURSE PROTO_FILES "${PROTO_SRC_DIR}/*.proto")
-message(WARNING "PROTO_FILES ${PROTO_FILES}")
 
 protobuf_grpc_generate_cpp(
     AZURE_PROTO_SRCS AZURE_PROTO_HDRS ${PROTO_SRC_DIR} ${PROTO_FILES})
