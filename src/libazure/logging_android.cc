@@ -48,7 +48,7 @@ void WriteToLog(int level, const char *fmt, ...) {
   strcpy(result, logger);
   strcat(result, fmt);
 
-  FILE *log_file = fopen(AZURE_LOG_LOC, "a+");
+  FILE *log_file = fopen(DefaultLogLocation().c_str(), "a+");
 
   vprintf(result, args);
   va_end(args);
