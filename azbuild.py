@@ -255,11 +255,11 @@ class SetupCommand(Command):
             *args, **kwargs)
 
     def execute(self, args, pass_args, cwd):
-        print('Setting up the build environment...')
+        print('[Setting up the build environment...]')
         print('')
 
         # Setup submodules.
-        print('- git submodule init / update...')
+        print('executing: git submodule init / update...')
         git_submodule_update()
         print('')
 
@@ -293,13 +293,15 @@ class BuildCommand(Command):
             '-j', default=4, type=int, help='Number of parallel threads')
 
     def execute(self, args, pass_args, cwd):
-        print('Building azure...')
+        print('[Building azure...]')
         print('')
 
         # Setup submodules.
-        print('- generating cmake project')
+        print('[Generating cmake project...]')
+        print('')
         generate_cmake(args['platform'], args)
-        print('- building cmake project')
+        print('[Building cmake project...]')
+        print('')
         build(args['platform'], args)
         print('')
 
@@ -317,7 +319,7 @@ class CleanCommand(Command):
             *args, **kwargs)
 
     def execute(self, args, pass_args, cwd):
-        print('Cleaning the build environment...')
+        print('[Cleaning the build environment...]')
         print('')
 
         clean()
