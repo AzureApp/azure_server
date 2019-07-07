@@ -135,6 +135,10 @@ def generate_cmake(platform, args):
 
     if args['generator'] == 'ninja':
         flags += "-GNinja "
+    elif args['generator'] == 'default' and args['platform'] == 'android':
+        # on android ninja is the only supported build generator
+        # TODO: detect if the cmake being used supports -G"Android Gradle - Ninja"
+        flags += "-GNinja "
 
     flags += "-DCMAKE_BUILD_TYPE={0} -DPROTOC_EXECUTABLE={1} -DGRPC_CPP_PLUGIN={2} ".format(build_type, config.get("proto", "protobuf_exe").strip('"'),
                                                                                             config.get("proto", "grpc_cpp_plugin_exe").strip('"'))
@@ -153,11 +157,17 @@ def generate_cmake(platform, args):
         ndk_bundle = path.join(sdk_loc, "ndk-bundle")
         toolchain_file = path.join(
             ndk_bundle, "build/cmake/android.toolchain.cmake")
-        arch = args['arch'] if args is not None and 'arch' in args else "arm64-v8a"
-        abi_level = args['abi_level'] if args is not None and 'abi_level' in args else "21"
 
-        flags += "-DAZURE_PLATFORM=android -DANDROID_ABI={0} -DANDROID_NDK={1} -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE={2} -DANDROID_NATIVE_API_LEVEL={3} -DANDROID_TOOLCHAIN=clang".format(
+        arch = args['arch'] if args['arch'] is not None else "arm64-v8a"
+        abi_level = args['abi_level'] if args['abi_level'] is not None else "21"
+
+        # android configuration
+        flags += "-DAZURE_PLATFORM=android -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI={0} -DANDROID_ABI={0} -DCMAKE_ANDROID_NDK={1} -DANDROID_NDK={1} -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE={2} -DANDROID_NATIVE_API_LEVEL={3} -DANDROID_TOOLCHAIN=clang CMAKE_ANDROID_STL_TYPE=c++_static ".format(
             arch, ndk_bundle, toolchain_file, abi_level)
+
+        # grpc run configuration
+        flags += "-DRUN_HAVE_POSIX_REGEX=0 -DRUN_HAVE_STD_REGEX=0 -DRUN_HAVE_STEADY_CLOCK=0 "
+
     if platform == "windows":
         flags += "-DAZURE_PLATFORM=windows "
 
