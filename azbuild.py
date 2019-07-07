@@ -162,14 +162,14 @@ def generate_cmake(platform, args):
         abi_level = args['abi_level'] if args['abi_level'] is not None else "21"
 
         # android configuration
-        flags += "-DAZURE_PLATFORM=android -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI={0} -DANDROID_ABI={0} -DCMAKE_ANDROID_NDK={1} -DANDROID_NDK={1} -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE={2} -DANDROID_NATIVE_API_LEVEL={3} -DANDROID_TOOLCHAIN=clang CMAKE_ANDROID_STL_TYPE=c++_static ".format(
+        flags += "-DAZURE_TARGET_PLATFORM=android -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI={0} -DANDROID_ABI={0} -DCMAKE_ANDROID_NDK={1} -DANDROID_NDK={1} -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE={2} -DANDROID_NATIVE_API_LEVEL={3} -DANDROID_TOOLCHAIN=clang CMAKE_ANDROID_STL_TYPE=c++_static ".format(
             arch, ndk_bundle, toolchain_file, abi_level)
 
         # grpc run configuration
         flags += "-DRUN_HAVE_POSIX_REGEX=0 -DRUN_HAVE_STD_REGEX=0 -DRUN_HAVE_STEADY_CLOCK=0 "
 
     if platform == "windows":
-        flags += "-DAZURE_PLATFORM=windows "
+        flags += "-DAZURE_TARGET_PLATFORM=windows "
 
     build_path = path.join(os.getcwd(), "build")
     if not path.exists(build_path):
