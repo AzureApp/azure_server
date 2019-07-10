@@ -12,7 +12,6 @@
 
 #include "logging.h"
 
-#ifdef AZURE_TARGET_ANDROID
 #include <android/log.h>
 
 namespace azure {
@@ -42,10 +41,10 @@ void WriteToLog(int level, const char *fmt, ...) {
   if (!strstr(fmt, "\n")) {
     fmt = concat(fmt, "\n");
   }
-  const char *logger = "[Azure Daemon] ";
-  char result[256];
+  const char logger[] = "[Azure Daemon] ";
+  char result[1024];
 
-  strcpy(result, logger);
+  strncpy(result, logger, sizeof(logger));
   strcat(result, fmt);
 
   FILE *log_file = fopen(DefaultLogLocation().c_str(), "a+");
@@ -57,5 +56,3 @@ void WriteToLog(int level, const char *fmt, ...) {
 }
 
 }  // namespace azure
-
-#endif

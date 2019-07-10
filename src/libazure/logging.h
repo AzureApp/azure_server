@@ -32,9 +32,10 @@
 namespace azure {
 
 static const char* concat(const char* s1, const char* s2) {
-  char* result = (char*)malloc(strlen(s1) + strlen(s2) + 1);
-  strcpy(result, s1);
-  strcat(result, s2);
+  size_t size = strlen(s1) + strlen(s2) + 1;
+  char* result = (char*)malloc(size);
+  strncpy_s(result, size, s1, strlen(s1));
+  strcat_s(result, size, s2);
   return result;
 }
 
@@ -90,7 +91,7 @@ extern std::string DefaultlogLocation();
  * Write string to the configured log file/stream.
  * This function is implemented on a per-platform basis.
  */
-extern void WriteToLog(int level, const char* fmt, ...);
+void WriteToLog(int level, const char* fmt, ...);
 
 }  // namespace azure
 
