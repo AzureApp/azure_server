@@ -41,6 +41,7 @@ void WriteToLog(int level, const char *fmt, ...) {
   if (!strstr(fmt, "\n")) {
     fmt = concat(fmt, "\n");
   }
+
   const char logger[] = "[Azure Daemon] ";
   char result[1024];
 
