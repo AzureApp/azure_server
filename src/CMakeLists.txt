@@ -51,6 +51,27 @@ set(GRPC_PROTO_GENS_DIR ${CMAKE_BINARY_DIR}/gens)
 file(MAKE_DIRECTORY ${GRPC_PROTO_GENS_DIR})
 include_directories(${GRPC_PROTO_GENS_DIR})
 
+# remove platform-specific code from platforms that aren't supported
+function (remove_platform_source_files file_list)
+  if(NOT AZURE_TARGET_PLATFORM)
+    message(SEND_ERROR "Error: unknown target platform")
+    return()
+  endif()
+  foreach(file ${file_list})
+    if (
+        ((${file} MATCHES "^(.*)_win.cc") AND NOT (${AZURE_TARGET_PLATFORM} STREQUAL "windows")) OR
+        ((${file} MATCHES "^(.*)_linux.cc") AND NOT (${AZURE_TARGET_PLATFORM} STREQUAL "linux")) OR
+        ((${file} MATCHES "^(.*)_darwin.cc") AND NOT ((${AZURE_TARGET_PLATFORM} STREQUAL "ios") OR (${AZURE_TARGET_PLATFORM} STREQUAL "macos"))) OR 
+        ((${file} MATCHES "^(.*)_android.cc") AND NOT (${AZURE_TARGET_PLATFORM} STREQUAL "android"))
+    )
+        set_source_files_properties(
+          ${file}
+          PROPERTIES HEADER_FILE_ONLY TRUE
+        )
+    endif()
+  endforeach()
+endfunction()
+
 # generate source files from proto definitions
 function(protobuf_grpc_generate_cpp SRC_FILES HDR_FILES INCLUDE_ROOT)
   if(NOT ARGN)
@@ -104,6 +125,8 @@ add_library(azure_proto_lib
 target_link_libraries(azure_proto_lib
   grpc++_unsecure
   libprotobuf-lite)
+
+remove_platform_source_files(${libazure_SRC_FILES})
 
 add_library(libazure STATIC ${libazure_HDR_FILES} ${libazure_SRC_FILES})
 target_include_directories(libazure PUBLIC "." ${GRPC_PROTO_GENS_DIR})
