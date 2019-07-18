@@ -58,12 +58,14 @@ function (remove_platform_source_files file_list)
     return()
   endif()
   foreach(file ${file_list})
+    # message(STATUS "Checking ${file}")
     if (
-        ((${file} MATCHES "^(.*)_win.cc") AND NOT (${AZURE_TARGET_PLATFORM} STREQUAL "windows")) OR
-        ((${file} MATCHES "^(.*)_linux.cc") AND NOT (${AZURE_TARGET_PLATFORM} STREQUAL "linux")) OR
-        ((${file} MATCHES "^(.*)_darwin.cc") AND NOT ((${AZURE_TARGET_PLATFORM} STREQUAL "ios") OR (${AZURE_TARGET_PLATFORM} STREQUAL "macos"))) OR 
-        ((${file} MATCHES "^(.*)_android.cc") AND NOT (${AZURE_TARGET_PLATFORM} STREQUAL "android"))
+        ((${file} MATCHES "^(.*)_win.cc") AND NOT (AZURE_TARGET_PLATFORM STREQUAL "windows")) OR
+        ((${file} MATCHES "^(.*)_linux.cc") AND NOT (AZURE_TARGET_PLATFORM STREQUAL "linux")) OR
+        ((${file} MATCHES "^(.*)_darwin.cc") AND NOT ((AZURE_TARGET_PLATFORM STREQUAL "ios") OR (AZURE_TARGET_PLATFORM STREQUAL "macos"))) OR 
+        ((${file} MATCHES "^(.*)_android.cc") AND NOT (AZURE_TARGET_PLATFORM STREQUAL "android"))
     )
+        # message(STATUS "Unmatching ${file}")
         set_source_files_properties(
           ${file}
           PROPERTIES HEADER_FILE_ONLY TRUE
@@ -119,6 +121,9 @@ file(GLOB_RECURSE PROTO_FILES "${PROTO_SRC_DIR}/*.proto")
 protobuf_grpc_generate_cpp(
     AZURE_PROTO_SRCS AZURE_PROTO_HDRS ${PROTO_SRC_DIR} ${PROTO_FILES})
 
+include_directories( ${CMAKE_SOURCE_DIR}/third_party/asio/asio/include)
+add_definitions(-DASIO_STANDALONE)
+
 add_library(azure_proto_lib
   STATIC ${AZURE_PROTO_HDRS} ${AZURE_PROTO_SRCS})
 
@@ -126,7 +131,7 @@ target_link_libraries(azure_proto_lib
   grpc++_unsecure
   libprotobuf-lite)
 
-remove_platform_source_files(${libazure_SRC_FILES})
+remove_platform_source_files("${libazure_SRC_FILES}")
 
 add_library(libazure STATIC ${libazure_HDR_FILES} ${libazure_SRC_FILES})
 target_include_directories(libazure PUBLIC "." ${GRPC_PROTO_GENS_DIR})
@@ -134,3 +139,7 @@ target_link_libraries(libazure azure_proto_lib)
 
 add_executable(azured ${azure_daemon_HDR_FILES} ${azure_daemon_SRC_FILES})
 target_link_libraries(azured libazure)
+
+if (AZURE_TARGET_PLATFORM STREQUAL "windows")
+  target_link_libraries(libazure wsock32 ws2_32)
+endif()
