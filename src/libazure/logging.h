@@ -34,8 +34,8 @@ namespace azure {
 static const char* concat(const char* s1, const char* s2) {
   size_t size = strlen(s1) + strlen(s2) + 1;
   char* result = (char*)malloc(size);
-  strncpy_s(result, size, s1, strlen(s1));
-  strcat_s(result, size, s2);
+  strncpy(result, s1, strlen(s1));
+  strcat(result, s2);
   return result;
 }
 
