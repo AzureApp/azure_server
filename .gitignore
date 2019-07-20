@@ -5,6 +5,8 @@
 .AppleDouble
 .LSOverride
 
+CMakeSettings.json
+
 build/
 
 .idea/

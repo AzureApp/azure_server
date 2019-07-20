@@ -31,6 +31,8 @@ def discover_commands(subparsers):
         'build': BuildCommand(subparsers),
         'clean': CleanCommand(subparsers)
     }
+    if sys.platform == 'win32':
+        commands['devenv'] = DevenvCommand(subparsers)
     # if sys.platform == 'win32':
     #    commands['devenv'] = DevenvCommand(subparsers)
     return commands
@@ -112,6 +114,25 @@ def shell_call(command, throw_on_error=True, stdout_path=None, cwd=None):
     return result
 
 
+def get_bin(binary):
+    # from xenia-build script
+    """Checks whether the given binary is present and returns the path.
+    Args:
+      binary: binary name (without .exe, etc).
+    Returns:
+      Full path to the binary or None if not found.
+    """
+    for path in os.environ['PATH'].split(os.pathsep):
+        path = path.strip('"')
+        exe_file = os.path.join(path, binary)
+        if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
+            return exe_file
+        exe_file += '.exe'
+        if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
+            return exe_file
+    return None
+
+
 def git_submodule_update():
     shell_call([
         'git',
@@ -126,7 +147,7 @@ def git_submodule_update():
 # -DANDROID_NATIVE_API_LEVEL=21 -DANDROID_TOOLCHAIN=clang
 
 
-def generate_cmake(platform, args):
+def generate_cmake(platform, args, execute=True):
     flags = ""
     if not config.has_option("proto", "protobuf_exe") or not config.has_option("proto", "grpc_cpp_plugin_exe"):
         raise Exception("No protobuf or grpc plugin executable provided")
@@ -140,8 +161,12 @@ def generate_cmake(platform, args):
         # TODO: detect if the cmake being used supports -G"Android Gradle - Ninja"
         flags += "-GNinja "
 
-    flags += "-DCMAKE_BUILD_TYPE={0} -DPROTOC_EXECUTABLE={1} -DGRPC_CPP_PLUGIN={2} ".format(build_type, config.get("proto", "protobuf_exe").strip('"'),
-                                                                                            config.get("proto", "grpc_cpp_plugin_exe").strip('"'))
+    flags += "-DPROTOC_EXECUTABLE={0} -DGRPC_CPP_PLUGIN={1} ".format(config.get("proto", "protobuf_exe").strip('"'),
+                                                                     config.get("proto", "grpc_cpp_plugin_exe").strip('"'))
+
+    # only append build type if we plan to generate
+    if execute:
+        flags += "-DCMAKE_BUILD_TYPE={0}".format(build_type)
 
     # We don't need to build codegen binaries as we ask the user to provide them
     flags += "-Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_PROTOC_BINARIES=OFF -DgRPC_BUILD_TESTS=OFF -DgRPC_BUILD_CODEGEN=OFF "
@@ -178,7 +203,9 @@ def generate_cmake(platform, args):
     print("cmake .. {0}".format(flags))
 
     gen_cmd = ["cmake"] + flags.split(" ") + [path.join(build_path, "..")]
-    shell_call(gen_cmd, cwd=build_path)
+    if execute:
+        shell_call(gen_cmd, cwd=build_path)
+    return flags
 
 
 def build(platform, args, throw_on_error=True):
@@ -208,6 +235,88 @@ def clean():
     build_path = path.join(os.getcwd(), 'build')
     if path.exists(build_path):
         shutil.rmtree(build_path)
+
+    cmake_settings = build_path = path.join(os.getcwd(), 'CMakeSettings.json')
+    if path.exists(cmake_settings) and path.isfile(cmake_settings):
+        os.remove(cmake_settings)
+
+
+def devenv(args):
+    if get_bin('devenv') is None:
+        raise Exception('devenv.exe is not on PATH')
+
+    cmake_settings_path = path.join(os.getcwd(), 'CMakeSettings.json')
+    if not path.exists(cmake_settings_path):
+        print('')
+        print('Generating Visual Studio CMake Settings...')
+        print('')
+        generate_cmake_settings(args, cmake_settings_path)
+    shell_call(['devenv', os.getcwd()])
+
+
+def generate_cmake_settings(args, file):
+    build_dir = path.join(os.getcwd(), 'build')
+    setting = {
+        "configurations": [
+            {
+                "cacheRoot": build_dir
+            },
+            {
+                "name": "Windows-Debug",
+                "generator": "Ninja",
+                "configurationType": "Debug",
+                "buildRoot": build_dir+"\\${name}",
+                "installRoot": build_dir+"\\install\\${name}",
+                "cmakeCommandArgs": generate_cmake('windows', args, False),
+                "buildCommandArgs": "-v",
+                "ctestCommandArgs": "",
+                "inheritEnvironments": ["msvc_x64_x64"],
+                "variables": []
+            },
+            {
+                "name": "Windows-Release",
+                "generator": "Ninja",
+                "configurationType": "Release",
+                "buildRoot": build_dir+"\\${name}",
+                "installRoot": build_dir+"\\install\\${name}",
+                "cmakeCommandArgs": generate_cmake('windows', args, False),
+                "buildCommandArgs": "-v",
+                "ctestCommandArgs": "",
+                "inheritEnvironments": ["msvc_x64_x64"],
+                "variables": []
+            },
+            {
+                "name": "Android-Debug",
+                "generator": "Ninja",
+                "configurationType": "Debug",
+                "buildRoot": build_dir+"\\${name}",
+                "installRoot": build_dir+"\\install\\${name}",
+                "cmakeCommandArgs": generate_cmake('android', args, False),
+                "buildCommandArgs": "-v",
+                "ctestCommandArgs": "",
+                "inheritEnvironments": ["gcc-arm"],
+                "intelliSenseMode": "linux-gcc-arm"
+            },
+            {
+                "name": "Android-Release",
+                "generator": "Ninja",
+                "configurationType": "Release",
+                "buildRoot": build_dir+"\\${name}",
+                "installRoot": build_dir+"\\install\\${name}",
+                "cmakeCommandArgs": generate_cmake('android', args, False),
+                "buildCommandArgs": "-v",
+                "ctestCommandArgs": "",
+                "inheritEnvironments": ["gcc-arm"],
+                "intelliSenseMode": "linux-gcc-arm"
+            }
+        ]
+    }
+
+    json_code = json.dumps(setting)
+
+    settings_file = open(file, 'w+')
+    settings_file.write(json_code)
+    settings_file.close()
 
 
 class Command(object):
@@ -266,14 +375,12 @@ class SetupCommand(Command):
         return 0
 
 
-class BuildCommand(Command):
+class BaseBuildCommand(Command):
     """'build' command"""
 
     def __init__(self, subparsers, *args, **kwargs):
-        super(BuildCommand, self).__init__(
+        super(BaseBuildCommand, self).__init__(
             subparsers,
-            name='build',
-            help_short='Build azure',
             *args, **kwargs)
         self.parser.add_argument('--generator', choices=[
                                  'default', 'ninja'], default='default', help='Select the default build generator')
@@ -308,6 +415,17 @@ class BuildCommand(Command):
         return 0
 
 
+class BuildCommand(BaseBuildCommand):
+    """'build' command."""
+
+    def __init__(self, subparsers, *args, **kwargs):
+        super(BuildCommand, self).__init__(
+            subparsers,
+            name='build',
+            help_short='Build the project',
+            *args, **kwargs)
+
+
 class CleanCommand(Command):
     """'clean' command."""
 
@@ -324,6 +442,28 @@ class CleanCommand(Command):
 
         clean()
         print('')
+
+        return 0
+
+
+class DevenvCommand(BaseBuildCommand):
+    """'devenv' command."""
+
+    def __init__(self, subparsers, *args, **kwargs):
+        super(DevenvCommand, self).__init__(
+            subparsers,
+            name='devenv',
+            help_short='Open the project in visual studio',
+            *args, **kwargs)
+
+    def execute(self, args, pass_args, cwd):
+        try:
+            print('')
+            print('WARNING: This command is still experimental')
+            print('')
+            devenv(args)
+        except Exception as e:
+            print(str(e))
 
         return 0
 
