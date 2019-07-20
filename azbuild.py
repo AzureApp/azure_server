@@ -166,7 +166,7 @@ def generate_cmake(platform, args, execute=True):
 
     # only append build type if we plan to generate
     if execute:
-        flags += "-DCMAKE_BUILD_TYPE={0}".format(build_type)
+        flags += "-DCMAKE_BUILD_TYPE={0} ".format(build_type)
 
     # We don't need to build codegen binaries as we ask the user to provide them
     flags += "-Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_PROTOC_BINARIES=OFF -DgRPC_BUILD_TESTS=OFF -DgRPC_BUILD_CODEGEN=OFF "
@@ -399,6 +399,17 @@ class BaseBuildCommand(Command):
         self.parser.add_argument(
             '-j', default=4, type=int, help='Number of parallel threads')
 
+
+class BuildCommand(BaseBuildCommand):
+    """'build' command."""
+
+    def __init__(self, subparsers, *args, **kwargs):
+        super(BuildCommand, self).__init__(
+            subparsers,
+            name='build',
+            help_short='Build the project',
+            *args, **kwargs)
+
     def execute(self, args, pass_args, cwd):
         print('[Building azure...]')
         print('')
@@ -413,17 +424,6 @@ class BaseBuildCommand(Command):
         print('')
 
         return 0
-
-
-class BuildCommand(BaseBuildCommand):
-    """'build' command."""
-
-    def __init__(self, subparsers, *args, **kwargs):
-        super(BuildCommand, self).__init__(
-            subparsers,
-            name='build',
-            help_short='Build the project',
-            *args, **kwargs)
 
 
 class CleanCommand(Command):
