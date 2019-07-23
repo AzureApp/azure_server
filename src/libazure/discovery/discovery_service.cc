@@ -9,8 +9,10 @@
  */
 
 #include "discovery_service.h"
-
+#include "libazure/util/current_device.h"
 namespace azure {
+
+using DeviceInfo = azure::proto::DeviceInfo;
 
 DiscoveryService::DiscoveryService(uint16_t port)
     : io_context_(), client_(io_context_, port) {}
@@ -24,16 +26,22 @@ DiscoveryService::~DiscoveryService() {
 void DiscoveryService::Start() {
   client_.on_receive.AddListener(
       [](azure::DiscoveryClient* client, const asio::mutable_buffer& buffer) {
-        DeviceInfo info;
-        memcpy(&info, buffer.data(), sizeof(info));
-        std::cout << "\n\tClient name: " << info.device_name
-                  << "\n\tClient system: " << info.device_system
-                  << "\n\tClient address: " << info.device_ip << ":"
-                  << info.device_port << std::endl;
+        DeviceInfo client_info;
+        client_info.ParseFromArray(buffer.data(), buffer.size());
 
-        DeviceInfo client_info = DeviceInfo::SystemInfo();
+        AZLog(
+            "Received discovery request from client:\n\t"
+            "Client name: %s\n\t "
+            "Client system: %s",
+            client_info.device_name(), client_info.os_version());
 
-        client->Write(&client_info, sizeof(client_info));
+        DeviceInfo device_info = CurrentDevice::CurrentDeviceInfo();
+
+        int buffer_size = device_info.ByteSize();
+        std::vector<char> buf(buffer_size);
+
+        device_info.SerializeToArray(&buf[0], buffer_size);
+        client->Write(buf.data(), buf.size());
       });
   thread_ = std::thread(&DiscoveryService::Run, this);
 }

@@ -10,8 +10,8 @@
 
 #include <asio.hpp>
 #include <functional>
-#include "logging.h"
-#include "util/delegate.h"
+#include "libazure/logging.h"
+#include "libazure/util/delegate.h"
 
 using namespace std::placeholders;
 
