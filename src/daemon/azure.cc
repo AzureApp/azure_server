@@ -1,7 +1,9 @@
+#include <gflags/gflags.h>
 #include <grpc++/grpc++.h>
 #include <libazure/discovery/discovery_service.h>
 #include <libazure/logging.h>
 #include <libazure/services/connection_service.h>
+#include <libazure/util/string.h>
 #include <string>
 
 using grpc::Server;
@@ -11,19 +13,23 @@ using grpc::Status;
 
 using azure::DiscoveryService;
 
-const unsigned short BROADCAST_PORT = 19001;
+DEFINE_uint32(discovery_port, 19001, "Port for incoming discovery requests");
+DEFINE_string(grpc_address, "0.0.0.0", "Address for gRPC to run on");
+DEFINE_uint32(grpc_port, 1248, "Port for gRPC server to run on");
 
 int main(int argc, char **argv) {
   AZLogW("This is a development executable. Please do not use\n");
 
   // setup discovery client
   AZLog("Setting up peer-discovery client");
-  DiscoveryService discovery_service(19001);
+  DiscoveryService discovery_service(FLAGS_discovery_port);
   discovery_service.Start();
 
   // setup grpc
   AZLog("Setting up gRPC server");
-  std::string server_address("0.0.0.0:1248");
+  std::string server_address = azure::format_string(
+      "%s:%hu", FLAGS_grpc_address.c_str(), FLAGS_grpc_port);
+
   azure::ConnectionServiceImpl connection_service;
 
   ServerBuilder builder;
