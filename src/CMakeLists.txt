@@ -18,7 +18,7 @@ set(PROTOC_EXECUTABLE "/usr/bin/protoc" CACHE STRING "Path to protoc executable"
 set(GRPC_CPP_PLUGIN "/usr/bin/grpc_cpp_plugin" CACHE STRING "Path to grpc_cpp_plugin executable")
 endif()
 
-if(WIN32)
+if(AZURE_TARGET_PLATFORM STREQUAL "windows")
 add_definitions(-D_WIN32_WINNT=0x0601)
 endif()
 
@@ -49,7 +49,6 @@ set(PROTO_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/proto/src)
 # output directory for generated proto source files
 set(GRPC_PROTO_GENS_DIR ${CMAKE_BINARY_DIR}/gens)
 file(MAKE_DIRECTORY ${GRPC_PROTO_GENS_DIR})
-include_directories(${GRPC_PROTO_GENS_DIR})
 
 # remove platform-specific code from platforms that aren't supported
 function (remove_platform_source_files file_list)
@@ -121,8 +120,10 @@ file(GLOB_RECURSE PROTO_FILES "${PROTO_SRC_DIR}/*.proto")
 protobuf_grpc_generate_cpp(
     AZURE_PROTO_SRCS AZURE_PROTO_HDRS ${PROTO_SRC_DIR} ${PROTO_FILES})
 
-include_directories( ${CMAKE_SOURCE_DIR}/third_party/asio/asio/include)
+include_directories(${CMAKE_SOURCE_DIR}/third_party/asio/asio/include)
 add_definitions(-DASIO_STANDALONE)
+
+include_directories(${GRPC_PROTO_GENS_DIR})
 
 add_library(azure_proto_lib
   STATIC ${AZURE_PROTO_HDRS} ${AZURE_PROTO_SRCS})
@@ -135,11 +136,11 @@ remove_platform_source_files("${libazure_SRC_FILES}")
 
 add_library(libazure STATIC ${libazure_HDR_FILES} ${libazure_SRC_FILES})
 target_include_directories(libazure PUBLIC "." ${GRPC_PROTO_GENS_DIR})
-target_link_libraries(libazure azure_proto_lib)
+target_link_libraries(libazure azure_proto_lib gflags)
 
 add_executable(azured ${azure_daemon_HDR_FILES} ${azure_daemon_SRC_FILES})
 target_link_libraries(azured libazure)
 
 if (AZURE_TARGET_PLATFORM STREQUAL "windows")
-  target_link_libraries(libazure wsock32 ws2_32)
+  target_link_libraries(libazure wsock32 ws2_32 version.lib)
 endif()
