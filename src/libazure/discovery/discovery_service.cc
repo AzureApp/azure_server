@@ -24,25 +24,25 @@ DiscoveryService::~DiscoveryService() {
 }
 
 void DiscoveryService::Start() {
-  client_.on_receive.AddListener(
-      [](azure::DiscoveryClient* client, const asio::mutable_buffer& buffer) {
-        DeviceInfo client_info;
-        client_info.ParseFromArray(buffer.data(), buffer.size());
+  client_.on_receive.AddListener([](azure::DiscoveryClient* client,
+                                    const asio::mutable_buffer& buffer) {
+    DeviceInfo client_info;
+    client_info.ParseFromArray(buffer.data(), buffer.size());
 
-        AZLog(
-            "Received discovery request from client:\n\t"
-            "Client name: %s\n\t "
-            "Client system: %s",
-            client_info.device_name(), client_info.os_version());
+    AZLog(
+        "Received discovery request from client:\n\t"
+        "Client name: %s\n\t "
+        "Client system: %s",
+        client_info.device_name().c_str(), client_info.os_version().c_str());
 
-        DeviceInfo device_info = CurrentDevice::CurrentDeviceInfo();
+    DeviceInfo device_info = CurrentDevice::CurrentDeviceInfo();
 
-        int buffer_size = device_info.ByteSize();
-        std::vector<char> buf(buffer_size);
+    int buffer_size = device_info.ByteSize();
+    std::vector<char> buf(buffer_size);
 
-        device_info.SerializeToArray(&buf[0], buffer_size);
-        client->Write(buf.data(), buf.size());
-      });
+    device_info.SerializeToArray(&buf[0], buffer_size);
+    client->Write(buf.data(), buf.size());
+  });
   thread_ = std::thread(&DiscoveryService::Run, this);
 }
 
