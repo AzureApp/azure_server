@@ -6,18 +6,19 @@
 #include <libazure/util/string.h>
 #include <string>
 
+using azure::DiscoveryService;
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
-
-using azure::DiscoveryService;
 
 DEFINE_uint32(discovery_port, 19001, "Port for incoming discovery requests");
 DEFINE_string(grpc_address, "0.0.0.0", "Address for gRPC to run on");
 DEFINE_uint32(grpc_port, 1248, "Port for gRPC server to run on");
 
 int main(int argc, char **argv) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   AZLogW("This is a development executable. Please do not use\n");
 
   // setup discovery client
