@@ -45,8 +45,8 @@ int get_system_property(const char* property, char* output,
 }
 
 std::string CurrentDevice::DeviceName() {
-  char manufacturer[PROP_VALUE_MAX];
-  char device[PROP_VALUE_MAX];
+  char manufacturer[PROP_VALUE_MAX] = {0};
+  char device[PROP_VALUE_MAX] = {0};
 
   get_system_property("ro.product.manufacturer", manufacturer,
                       "Unknown Manufacturer");
@@ -61,7 +61,7 @@ OperatingSystem CurrentDevice::OperatingSystem() {
 }
 
 std::string CurrentDevice::OsVersion() {
-  char sdk_ver_str[PROP_VALUE_MAX];
+  char sdk_ver_str[PROP_VALUE_MAX] = {0};
   get_system_property("ro.build.version.sdk", sdk_ver_str, "v?.?");
 
   return azure::format_string("Android (API Level %s)", sdk_ver_str);
