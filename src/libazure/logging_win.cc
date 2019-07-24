@@ -1,6 +1,8 @@
 
 
 #include <Windows.h>
+#include <iostream>
+#include <string>
 #include "logging.h"
 
 namespace azure {
@@ -11,22 +13,19 @@ void WriteToLog(int level, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
 
-  const char logger[] = "[Azure Daemon] ";
-  char result[1024] = {0};
+  std::string prefix = "[Azure Daemon] ";
 
-  strncpy_s(result, sizeof(result), logger, sizeof(logger));
-  strcat_s(result, sizeof(result), fmt);
+  std::string line;
+  line.resize(std::vsnprintf(nullptr, 0, fmt, args) + 1);
+  std::vsprintf(&line[0], fmt, args);
+  line.insert(0, prefix);
+  line += '\n';
 
-  vsprintf(result, fmt, args);
   va_end(args);
 
-  if (!strstr(result, "\n")) {
-    result[strlen(result) + 1] = '\n';
-  }
+  std::cout.write(line.c_str(), line.size());
 
-  OutputDebugStringA(result);
-
-  printf("%s\n", result);
+  OutputDebugStringA(line.c_str());
 }
 
 }  // namespace azure

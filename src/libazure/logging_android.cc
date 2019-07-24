@@ -13,6 +13,8 @@
 #include "logging.h"
 
 #include <android/log.h>
+#include <iostream>
+#include <string>
 
 namespace azure {
 
@@ -36,25 +38,23 @@ void WriteToLog(int level, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
 
-  const char logger[] = "[Azure Daemon] ";
-  char result[1024];
+  std::string prefix = "[Azure Daemon] ";
 
-  strncpy(result, logger, sizeof(logger));
-  strcat(result, fmt);
+  std::string line;
+  line.resize(std::vsnprintf(nullptr, 0, fmt, args) + 1);
+  std::vsprintf(&line[0], fmt, args);
+  line.insert(0, prefix);
+  line += '\n';
 
-  vsprintf(result, fmt, args);
   va_end(args);
 
-  __android_log_vprint(az_log_level_to_android(level), "Azure", fmt, args);
+  std::cout.write(line.c_str(), line.size());
 
-  printf("%s\n", result);
+  __android_log_print(az_log_level_to_android(level), "Azure", "%s",
+                      line.c_str());
 
   FILE *log_file = fopen(DefaultLogLocation().c_str(), "a+");
-
-  if (!strstr(result, "\n")) {
-    result[strlen(result) + 1] = '\n';
-  }
-
+  fwrite(line.c_str(), 1, line.size(), log_file);
   fclose(log_file);
 }
 
