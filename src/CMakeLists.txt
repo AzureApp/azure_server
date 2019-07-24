@@ -143,4 +143,6 @@ target_link_libraries(azured libazure)
 
 if (AZURE_TARGET_PLATFORM STREQUAL "windows")
   target_link_libraries(libazure wsock32 ws2_32 version.lib)
+elseif(AZURE_TARGET_PLATFORM STREQUAL "android")
+  target_link_libraries(libazure android log)
 endif()
