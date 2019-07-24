@@ -36,22 +36,24 @@ void WriteToLog(int level, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
 
-  __android_log_vprint(az_log_level_to_android(level), "Azure", fmt, args);
-
-  if (!strstr(fmt, "\n")) {
-    fmt = concat(fmt, "\n");
-  }
-
   const char logger[] = "[Azure Daemon] ";
   char result[1024];
 
   strncpy(result, logger, sizeof(logger));
   strcat(result, fmt);
 
+  vsprintf(result, fmt, args);
+  va_end(args);
+
+  __android_log_vprint(az_log_level_to_android(level), "Azure", fmt, args);
+
+  printf("%s\n", result);
+
   FILE *log_file = fopen(DefaultLogLocation().c_str(), "a+");
 
-  vprintf(result, args);
-  va_end(args);
+  if (!strstr(result, "\n")) {
+    result[strlen(result) + 1] = '\n';
+  }
 
   fclose(log_file);
 }
