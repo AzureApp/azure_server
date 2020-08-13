@@ -38,11 +38,16 @@ add_definitions(-DGRPC_USE_PROTO_LITE)
 endif()
 
 set(GRPC_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/grpc" CACHE BOOL "Directory of grpc source code")
+set(GFLAGS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/gflags" CACHE BOOL "Directory of gflags source code")
 
 set(GRPC_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/grpc)
+set(GFLAGS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/gflags)
 file(MAKE_DIRECTORY ${GRPC_BUILD_DIR})
+file(MAKE_DIRECTORY ${GFLAGS_BUILD_DIR})
+
 
 add_subdirectory(${GRPC_SRC_DIR} ${GRPC_BUILD_DIR})
+add_subdirectory(${GFLAGS_SRC_DIR} ${GFLAGS_BUILD_DIR})
 
 set(PROTO_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/proto/src)
 
@@ -136,7 +141,7 @@ remove_platform_source_files("${libazure_SRC_FILES}")
 
 add_library(libazure STATIC ${libazure_HDR_FILES} ${libazure_SRC_FILES})
 target_include_directories(libazure PUBLIC "." ${GRPC_PROTO_GENS_DIR})
-target_link_libraries(libazure azure_proto_lib gflags)
+target_link_libraries(libazure azure_proto_lib gflags::gflags)
 
 add_executable(azured ${azure_daemon_HDR_FILES} ${azure_daemon_SRC_FILES})
 target_link_libraries(azured libazure)
