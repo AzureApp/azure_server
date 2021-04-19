@@ -31,9 +31,9 @@ void DiscoveryService::Start() {
 
     AZLog(
         "Received discovery request from client:\n\t"
-        "Client name: %s\n\t "
-        "Client system: %s",
-        client_info.device_name().c_str(), client_info.os_version().c_str());
+        "Client name: {0}\n\t "
+        "Client system: {1}",
+        client_info.device_name(), client_info.os_version());
 
     DeviceInfo device_info = CurrentDevice::CurrentDeviceInfo();
 

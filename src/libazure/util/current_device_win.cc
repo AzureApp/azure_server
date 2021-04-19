@@ -14,6 +14,7 @@
 #include <vector>
 #include "current_device.h"
 #include "libazure/util/string.h"
+#include <cassert>
 
 namespace azure {
 

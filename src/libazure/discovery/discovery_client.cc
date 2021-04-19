@@ -22,7 +22,7 @@ DiscoveryClient::DiscoveryClient(asio::io_context& io_context, uint16_t port)
   try {
     socket_ = std::make_unique<protocol::socket>(io_context_, local_endpoint_);
   } catch (const asio::system_error& e) {
-    AZLogE("Could not create socket: %s", std::string{e.what()}.c_str());
+    AZLogE("Could not create socket: {}", std::string{e.what()});
     exit(1);
   }
 
@@ -40,7 +40,7 @@ void DiscoveryClient::Write(asio::mutable_buffer buffer) {
   try {
     socket_->send_to(buffer, sender_endpoint_);
   } catch (const asio::system_error& e) {
-    AZLogE("Could not send device info: %s", std::string{e.what()}.c_str());
+    AZLogE("Could not send device info: {}", std::string{e.what()});
     exit(1);
   }
 }
@@ -51,7 +51,7 @@ void DiscoveryClient::Write(void* data, size_t size) {
 
 void DiscoveryClient::OnReceive(const asio::error_code& ec) {
   if (ec) {
-    AZLogE("Could not receive data: [error: %s]", ec.message().c_str());
+    AZLogE("Could not receive data: [error: {}]", ec.message());
     exit(1);
   } else {
     on_receive(this, asio::buffer(buffer_, sizeof(buffer_)));

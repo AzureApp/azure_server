@@ -42,18 +42,23 @@ set(GFLAGS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/gflags" CACHE BOO
 
 set(GRPC_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/grpc)
 set(GFLAGS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/gflags)
+set(SPDLOG_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/spdlog)
 file(MAKE_DIRECTORY ${GRPC_BUILD_DIR})
 file(MAKE_DIRECTORY ${GFLAGS_BUILD_DIR})
+file(MAKE_DIRECTORY ${SPDLOG_BUILD_DIR})
 
 
 add_subdirectory(${GRPC_SRC_DIR} ${GRPC_BUILD_DIR})
 add_subdirectory(${GFLAGS_SRC_DIR} ${GFLAGS_BUILD_DIR})
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../third_party/spdlog" ${SPDLOG_BUILD_DIR})
 
 set(PROTO_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/proto/src)
 
 # output directory for generated proto source files
 set(GRPC_PROTO_GENS_DIR ${CMAKE_BINARY_DIR}/gens)
 file(MAKE_DIRECTORY ${GRPC_PROTO_GENS_DIR})
+
+
 
 # remove platform-specific code from platforms that aren't supported
 function (remove_platform_source_files file_list)
@@ -140,8 +145,8 @@ target_link_libraries(azure_proto_lib
 remove_platform_source_files("${libazure_SRC_FILES}")
 
 add_library(libazure STATIC ${libazure_HDR_FILES} ${libazure_SRC_FILES})
-target_include_directories(libazure PUBLIC "." ${GRPC_PROTO_GENS_DIR})
-target_link_libraries(libazure azure_proto_lib gflags::gflags)
+target_include_directories(libazure PUBLIC "." ${GRPC_PROTO_GENS_DIR} ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
+target_link_libraries(libazure azure_proto_lib gflags::gflags spdlog::spdlog)
 
 add_executable(azured ${azure_daemon_HDR_FILES} ${azure_daemon_SRC_FILES})
 target_link_libraries(azured libazure)

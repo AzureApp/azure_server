@@ -19,7 +19,7 @@ DEFINE_uint32(grpc_port, 1248, "Port for gRPC server to run on");
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  AZLogW("This is a development executable. Please do not use\n");
+  AZLogW("This is a development executable. Please do not use");
 
   // setup discovery client
   AZLog("Setting up peer-discovery client");
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
   // builder.RegisterService(&service);
   // Finally assemble the server.
   std::unique_ptr<Server> server(builder.BuildAndStart());
-  AZLog("gRPC server listening on %s", server_address.c_str());
+  AZLog("gRPC server listening on {}", server_address);
 
   // Wait for the server to shutdown. Note that some other thread must be
   // responsible for shutting down the server for this call to ever return.

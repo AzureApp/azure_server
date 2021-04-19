@@ -3,7 +3,7 @@
  * Azure : Open Source Multi-Target Memory Editor                             *
  * File  : logging.h                                                          *
  ******************************************************************************
- * Copyright 2018 Satori. All rights reserved.                                *
+ * Copyright 2021 Satori. All rights reserved.                                *
  * Released under the BSD license - see LICENSE in the root for more details. *
  ******************************************************************************
  */
@@ -11,33 +11,22 @@
 #ifndef AZURE_LOGGING_H
 #define AZURE_LOGGING_H
 
-#include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <ostream>
+#include <algorithm>
 #include <string>
-#include "targets.h"
+#include <memory>
+#include <spdlog/spdlog.h>
+#include <gflags/gflags.h>
 
-#define AZ_LOG_INFO 1
-#define AZ_LOG_WARN 2
-#define AZ_LOG_ERROR 3
-#define AZ_LOG_DEBUG 4
+#define AZLogE(...) azure::WriteToLog(LogLevel::Error, __VA_ARGS__)
+#define AZLogW(...) azure::WriteToLog(LogLevel::Warn, __VA_ARGS__)
+#define AZLogD(...) azure::WriteToLog(LogLevel::Debug, __VA_ARGS__)
+#define AZLog(...) azure::WriteToLog(LogLevel::Info, __VA_ARGS__)
 
-#define AZLogE(...) azure::WriteToLog(AZ_LOG_ERROR, __VA_ARGS__)
-#define AZLogW(...) azure::WriteToLog(AZ_LOG_WARN, __VA_ARGS__)
-#define AZLogD(...) azure::WriteToLog(AZ_LOG_DEBUG, __VA_ARGS__)
-#define AZLog(...) azure::WriteToLog(AZ_LOG_INFO, __VA_ARGS__)
+enum class LogLevel { Info = 1, Warn, Error, Debug };
 
 namespace azure {
-
-static const char* concat(const char* s1, const char* s2) {
-  size_t size = strlen(s1) + strlen(s2) + 1;
-  char* result = (char*)malloc(size);
-  strncpy(result, s1, strlen(s1));
-  strcat(result, s2);
-  return result;
-}
 
 // http://www.i42.co.uk/stuff/hexdump.htm
 template <typename Elem, typename Traits>
@@ -63,7 +52,7 @@ inline void hex_dump(const void* aData, std::size_t aLength,
             aStream.width(2);
             aStream.fill('0');
             aStream << std::hex << std::uppercase
-                    << static_cast<int>(static_cast<unsigned char>(ch));
+                << static_cast<int>(static_cast<unsigned char>(ch));
             break;
           }
           case 2: {
@@ -81,18 +70,60 @@ inline void hex_dump(const void* aData, std::size_t aLength,
   }
 }
 
+class Logger {
+public:
+  static Logger& SharedLogger();
+
+  template <typename LogString, typename... Args>
+  void Write(LogLevel level, LogString str, Args ... args);
+private:
+  Logger();
+ ~Logger() = default;
+
+  bool Initialize();
+
+  void LoadSinks();
+
+  const std::string kLoggerName = "azure";
+  std::unique_ptr<spdlog::logger> logger_;
+};
+
 /**
  * Get the default location that logs are written to.
  * This function is implemented on a per-platform basis.
  */
 extern std::string DefaultlogLocation();
 
-/**
- * Write string to the configured log file/stream.
- * This function is implemented on a per-platform basis.
- */
-void WriteToLog(int level, const char* fmt, ...);
+template <typename LogString, typename ... Args>
+void Logger::Write(LogLevel level, LogString str, Args ... args) {
+  switch (level) {
+    case LogLevel::Info: {
+      logger_->info(str, std::forward<Args>(args)...);
+      break;
+    }
+    case LogLevel::Warn: {
+      logger_->warn(str, std::forward<Args>(args)...);
+      break;
+    }
+    case LogLevel::Error: {
+      logger_->error(str, std::forward<Args>(args)...);
+      break;
+    }
+    case LogLevel::Debug: {
+      logger_->error(str, std::forward<Args>(args)...);
+      break;
+    }
+    default:
+      return;
+  }
+}
 
-}  // namespace azure
+template <typename... Args>
+void WriteToLog(LogLevel level, Args... args) {
+  Logger::SharedLogger().Write(level, std::forward<Args>(args)...);
+}
+
+
+} // namespace azure
 
 #endif  // AZURE_LOGGING_H
