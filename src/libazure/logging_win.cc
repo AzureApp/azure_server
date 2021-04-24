@@ -22,7 +22,7 @@ void Logger::LoadSinks() {
   std::vector<spdlog::sink_ptr> sinks;
 
   sinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
-  sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
+  sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_st>());
   if (!FLAGS_log_location.empty()) {
     sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_st>(
         FLAGS_log_location));   

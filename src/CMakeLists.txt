@@ -134,7 +134,7 @@ include_directories(${CMAKE_SOURCE_DIR}/third_party/asio/asio/include)
 add_definitions(-DASIO_STANDALONE)
 
 include_directories(${GRPC_PROTO_GENS_DIR})
-
+include_directories(${AZURE_PROTO_HDRS})
 add_library(azure_proto_lib
   STATIC ${AZURE_PROTO_HDRS} ${AZURE_PROTO_SRCS})
 

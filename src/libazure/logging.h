@@ -11,7 +11,6 @@
 #ifndef AZURE_LOGGING_H
 #define AZURE_LOGGING_H
 
-#include <stdlib.h>
 #include <ostream>
 #include <algorithm>
 #include <string>
