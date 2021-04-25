@@ -33,6 +33,8 @@ class ConnectionServiceImpl final : public proto::ConnectionService::Service {
   Status Disconnect(ServerContext* context,
                     const proto::DisconnectRequest* request,
                     proto::DisconnectResponse* response) override;
+
+  Handshake CreateHandshake() const;
 };
 
 }  // namespace azure
