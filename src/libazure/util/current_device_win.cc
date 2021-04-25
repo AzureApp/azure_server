@@ -40,20 +40,6 @@ OperatingSystem CurrentDevice::OperatingSystem() {
 }
 
 std::string CurrentDevice::OsVersion() {
-  std::string version;
-
-  if (IsWindows10OrGreater()) {
-    version = "Windows 10";
-  } else if (IsWindows8Point1OrGreater()) {
-    version = "Windows 8.1";
-  } else if (IsWindows8OrGreater()) {
-    version = "Windows 8";
-  } else if (IsWindows7OrGreater()) {
-    version = "Windows 7";
-  } else {
-    version = "Windows Legacy";
-  }
-
   const auto kernel32 = L"kernel32.dll";
   DWORD dummy;
   const auto info_size =
@@ -71,8 +57,8 @@ std::string CurrentDevice::OsVersion() {
 
   auto file_info = static_cast<const VS_FIXEDFILEINFO *>(p);
 
-  version += azure::format_string(
-      " (%ld.%ld.%ld.%ld)", HIWORD(file_info->dwFileVersionMS),
+  std::string version = azure::format_string(
+      "Windows (%ld.%ld.%ld.%ld)", HIWORD(file_info->dwFileVersionMS),
       LOWORD(file_info->dwFileVersionMS), HIWORD(file_info->dwFileVersionLS),
       LOWORD(file_info->dwFileVersionLS));
 
