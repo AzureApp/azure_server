@@ -10,6 +10,8 @@
 
 // TODO: this needs a lot of work
 
+#pragma once
+
 #if defined(__APPLE__)
 
 #include <TargetConditionals.h>

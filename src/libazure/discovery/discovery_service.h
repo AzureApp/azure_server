@@ -8,6 +8,8 @@
  ******************************************************************************
  */
 
+#pragma once
+
 #include <thread>
 #include "connection.pb.h"
 #include "discovery_client.h"

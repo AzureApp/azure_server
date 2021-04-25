@@ -8,6 +8,8 @@
  ******************************************************************************
  */
 
+#pragma once
+
 #include <asio.hpp>
 #include <functional>
 #include "libazure/logging.h"

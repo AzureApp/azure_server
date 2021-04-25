@@ -1,3 +1,15 @@
+/**
+ ******************************************************************************
+ * Azure : Open Source Multi-Target Memory Editor                             *
+ * File  : connection_service.h                                               *
+ ******************************************************************************
+ * Copyright 2021 Satori. All rights reserved.                                *
+ * Released under the BSD license - see LICENSE in the root for more details. *
+ ******************************************************************************
+ */
+
+#pragma once
+
 #include <grpc++/grpc++.h>
 #include "connection.grpc.pb.h"
 

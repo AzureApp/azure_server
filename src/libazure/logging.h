@@ -8,8 +8,7 @@
  ******************************************************************************
  */
 
-#ifndef AZURE_LOGGING_H
-#define AZURE_LOGGING_H
+#pragma once
 
 #include <ostream>
 #include <algorithm>
@@ -122,7 +121,4 @@ void WriteToLog(LogLevel level, Args... args) {
   Logger::SharedLogger().Write(level, std::forward<Args>(args)...);
 }
 
-
 } // namespace azure
-
-#endif  // AZURE_LOGGING_H
