@@ -19,7 +19,7 @@ set(GRPC_CPP_PLUGIN "/usr/bin/grpc_cpp_plugin" CACHE STRING "Path to grpc_cpp_pl
 endif()
 
 if(AZURE_TARGET_PLATFORM STREQUAL "windows")
-add_definitions(-D_WIN32_WINNT=0x0601)
+add_definitions(-D_WIN32_WINNT=0x0A00) # set target to Windows 10
 endif()
 
 if(NOT EXISTS ${PROTOC_EXECUTABLE})
